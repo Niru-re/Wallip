@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --glass-highlight: rgba(255, 255, 255, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.45);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Ambient mesh — depth layers, not flat black */
+.ambient-mesh {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(125, 211, 252, 0.55) 0%, transparent 42%),
+    radial-gradient(circle at 85% 15%, rgba(167, 139, 250, 0.5) 0%, transparent 40%),
+    radial-gradient(circle at 70% 85%, rgba(249, 168, 212, 0.45) 0%, transparent 45%),
+    radial-gradient(circle at 25% 75%, rgba(56, 189, 248, 0.35) 0%, transparent 40%),
+    linear-gradient(160deg, #0c1222 0%, #1a1f3a 35%, #2d1b4e 70%, #1a1030 100%);
+}
+
+/* Floating light orbs */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.45;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 420px;
+  height: 420px;
+  top: -8%;
+  left: -5%;
+  background: #7dd3fc;
+  animation: float-orb 18s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 360px;
+  height: 360px;
+  top: 10%;
+  right: -8%;
+  background: #a78bfa;
+  animation: float-orb 22s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+  width: 500px;
+  height: 500px;
+  bottom: -15%;
+  left: 25%;
+  background: #f9a8d4;
+  animation: float-orb 20s ease-in-out infinite 2s;
+}
+
+.orb-4 {
+  width: 280px;
+  height: 280px;
+  bottom: 20%;
+  right: 15%;
+  background: #38bdf8;
+  animation: float-orb 16s ease-in-out infinite 1s reverse;
+}
+
+.orb-5 {
+  width: 200px;
+  height: 200px;
+  top: 45%;
+  left: 45%;
+  background: #c4b5fd;
+  opacity: 0.3;
+  animation: float-orb 24s ease-in-out infinite 3s;
+}
+
+@keyframes float-orb {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 25px) scale(0.95);
+  }
+}
+
+/* Subtle grain for spatial depth */
+.ambient-grain {
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
