@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,59 +18,66 @@ export default function LoginPage() {
   const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/me");
-        const json = await res.json();
-        if (json?.user) setAlreadyLoggedIn(true);
-      } catch {
-        // ignore
-      }
-    })();
+    if (!supabase) return;
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) setAlreadyLoggedIn(true);
+    };
+    checkUser();
   }, []);
-
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!supabase) {
+      setError("Supabase not configured. Please add environment variables.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error ?? "Login failed");
-        return;
-      }
-
+    if (error) {
+      setError(error.message);
+    } else {
       router.push("/");
-    } catch {
-      setError("Login failed.");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
+  }
+
+  async function handleGoogleSignIn() {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    });
+    if (error) setError(error.message);
   }
 
   async function onLogout() {
-    setLoading(true);
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setAlreadyLoggedIn(false);
-    } finally {
-      setLoading(false);
-    }
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    setAlreadyLoggedIn(false);
   }
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
       <h1 className="mb-6 text-2xl font-semibold">Login</h1>
 
-      {alreadyLoggedIn ? (
+      {!supabase ? (
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <p className="text-white/60 mb-2">Supabase not configured.</p>
+          <p className="text-xs text-white/40">Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your .env.local file.</p>
+        </div>
+      ) : alreadyLoggedIn ? (
         <div className="rounded-lg border border-white/10 bg-white/5 p-4">
           <p className="mb-4">You are already logged in.</p>
           <button
@@ -117,7 +129,17 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign in"}
           </button>
 
-          <p className="text-center text-sm text-white/70">
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full block rounded-md border border-white/15 bg-white/5 px-4 py-2 text-center text-sm font-medium text-white/80 hover:bg-white/10"
+            >
+              Continue with Google
+            </button>
+          </div>
+
+          <p className="text-center text-sm text-white/60">
             New here?{" "}
             <button
               type="button"
@@ -132,4 +154,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

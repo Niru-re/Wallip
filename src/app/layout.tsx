@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { Clarity } from "@/components/Clarity";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} h-full`}>
       <body className="flex min-h-full flex-col antialiased">
+        <Clarity />
         <AmbientBackground />
         <Header />
         <main className="flex-1">{children}</main>

@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -14,55 +19,55 @@ export default function SignupPage() {
   const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/me", { method: "GET" });
-        const json = await res.json();
-        if (json?.user) setAlreadyLoggedIn(true);
-      } catch {
-        // ignore
-      }
-    })();
+    if (!supabase) return;
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) setAlreadyLoggedIn(true);
+    };
+    checkUser();
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      setLoading(false);
+    if (!supabase) {
+      setError("Supabase not configured. Please add environment variables.");
       return;
     }
 
-    try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error ?? "Signup failed");
-        return;
-      }
-
-      // After signup, redirect to login
-      router.push("/login");
-    } catch {
-      setError("Signup failed.");
-    } finally {
-      setLoading(false);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
     }
+
+    setLoading(true);
+    setError(null);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      router.push("/login");
+    }
+
+    setLoading(false);
   }
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
       <h1 className="mb-6 text-2xl font-semibold">Create account</h1>
 
-      {alreadyLoggedIn ? (
+      {!supabase ? (
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <p className="text-white/60 mb-2">Supabase not configured.</p>
+          <p className="text-xs text-white/40">Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your .env.local file.</p>
+        </div>
+      ) : alreadyLoggedIn ? (
         <div className="rounded-lg border border-white/10 bg-white/5 p-4">
           <p className="mb-4">You are already logged in.</p>
           <button
@@ -126,7 +131,7 @@ export default function SignupPage() {
             {loading ? "Creating..." : "Create account"}
           </button>
 
-          <p className="text-center text-sm text-white/70">
+          <p className="text-center text-sm text-white/60">
             Already have an account?{" "}
             <button
               type="button"
@@ -141,4 +146,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

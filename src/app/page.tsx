@@ -5,6 +5,8 @@ import { WallpaperGrid } from "@/components/WallpaperGrid";
 import { MOCK_WALLPAPERS } from "@/lib/mock-data";
 import { getFeaturedWallpapers, getTrendingWallpapers, getWallpapers } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   let featured = MOCK_WALLPAPERS.filter((w) => w.downloads > 10000);
   let trending = [...MOCK_WALLPAPERS].sort((a, b) => b.downloads - a.downloads);
@@ -22,6 +24,14 @@ export default async function HomePage() {
     featured = featuredData.length ? featuredData : featured;
     trending = trendingData.length ? trendingData : trending;
     latest = latestData.wallpapers.length ? latestData.wallpapers : latest;
+    console.log("🏠 Home page loaded wallpapers:", {
+      featuredCount: featured.length,
+      trendingCount: trending.length,
+      latestCount: latest.length,
+      featuredFirst: featured[0] ? { title: featured[0].title, image_url: featured[0].image_url } : null,
+      trendingFirst: trending[0] ? { title: trending[0].title, image_url: trending[0].image_url } : null,
+      latestFirst: latest[0] ? { title: latest[0].title, image_url: latest[0].image_url } : null,
+    });
   } catch (error) {
     console.warn("Using mock wallpapers because Supabase is not ready:", error);
   }

@@ -104,6 +104,7 @@ CREATE TABLE collection_wallpapers (
 
 CREATE TABLE download_events (
   id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   wallpaper_id UUID NOT NULL REFERENCES wallpapers(id) ON DELETE CASCADE,
   ip_hash      TEXT,
   user_agent   TEXT,
@@ -131,6 +132,10 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE wallpapers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallpaper_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_favorites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE download_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collection_wallpapers ENABLE ROW LEVEL SECURITY;
 
 -- Public read access for published wallpapers
 CREATE POLICY "Public read wallpapers"
@@ -144,5 +149,35 @@ CREATE POLICY "Public read tags"
 CREATE POLICY "Public read wallpaper_tags"
   ON wallpaper_tags FOR SELECT
   USING (true);
+
+-- User Favorites Policies
+CREATE POLICY "Users can view their own favorites"
+  ON user_favorites FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can add their own favorites"
+  ON user_favorites FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own favorites"
+  ON user_favorites FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Download Events Policies
+CREATE POLICY "Users can view their own downloads"
+  ON download_events FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own downloads"
+  ON download_events FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- RPC functions for admin
+CREATE OR REPLACE FUNCTION get_user_count()
+RETURNS integer AS $$
+BEGIN
+  RETURN (SELECT COUNT(*) FROM auth.users);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Service role handles writes (admin uploads via API routes)

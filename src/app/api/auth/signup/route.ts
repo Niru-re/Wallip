@@ -1,53 +1,37 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { mysqlPool } from "@/lib/mysql";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const emailRaw = String(body?.email ?? "").trim().toLowerCase();
-    const password = String(body?.password ?? "");
-
-    if (!emailRaw || !emailRaw.includes("@")) {
-      return NextResponse.json(
-        { error: "Please provide a valid email." },
-        { status: 400 }
-      );
+  const { email, password } = await req.json();
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name, value, options) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          cookieStore.delete({ name, ...options });
+        },
+      },
     }
+  );
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 }
-      );
-    }
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
 
-    const existing = await mysqlPool.query(
-      "SELECT id FROM users WHERE email = ? LIMIT 1",
-      [emailRaw]
-    );
-
-    if (Array.isArray(existing[0]) && existing[0].length > 0) {
-      return NextResponse.json(
-        { error: "Email is already registered." },
-        { status: 409 }
-      );
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    await mysqlPool.query(
-      "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-      [emailRaw, passwordHash]
-    );
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("/api/auth/signup error:", err);
-    return NextResponse.json(
-      { error: "Signup failed." },
-      { status: 500 }
-    );
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  return NextResponse.json({ ok: true });
 }
 
