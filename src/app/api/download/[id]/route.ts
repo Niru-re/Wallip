@@ -49,16 +49,17 @@ export async function POST(
 
       if (!error && data) {
         // Convert Supabase data to match mock shape
-        wallpaper = {
+        const foundWallpaper = {
           ...data,
           tags: []
         } as any;
+        wallpaper = foundWallpaper;
 
         console.log("✅ Supabase found wallpaper for download:", { 
-          id: wallpaper.id, 
-          title: wallpaper.title, 
-          slug: wallpaper.slug,
-          image_url: wallpaper.image_url 
+          id: foundWallpaper.id, 
+          title: foundWallpaper.title, 
+          slug: foundWallpaper.slug,
+          image_url: foundWallpaper.image_url 
         });
       } else if (error) {
         console.log("⚠️ Supabase error finding wallpaper:", error);

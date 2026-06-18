@@ -9,7 +9,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist);
+  --font-sans: system-ui, sans-serif;
 }
 
 html {
@@ -18,7 +18,7 @@ html {
 
 body {
   color: var(--text-primary);
-  font-family: var(--font-geist), system-ui, sans-serif;
+  font-family: system-ui, sans-serif;
   min-height: 100vh;
 }
 

@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GlassPanel } from "@/components/GlassPanel";
 
 export default async function AdminDashboard() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,7 +21,13 @@ export default async function AdminDashboard() {
 
   // Get total stats
   const [
-    // Note: To get auth.users, we need to use the service role and SQL query
+    totalUsersResult,
+    totalWallpapersResult,
+    totalDownloadsResult,
+    totalViewsResult,
+    totalFavoritesResult,
+  ] = await Promise.all([
+    // Note: To get auth.users, we need to use the service role and SQL query.
     (async () => {
       const { data, error } = await supabaseAdmin.rpc('get_user_count');
       if (error) {
@@ -42,6 +48,12 @@ export default async function AdminDashboard() {
     })(),
     supabaseAdmin.from("user_favorites").select("*", { count: "exact", head: true }),
   ]);
+
+  const totalUsers = totalUsersResult.count ?? 0;
+  const totalWallpapers = totalWallpapersResult.count ?? 0;
+  const totalDownloads = totalDownloadsResult.count ?? 0;
+  const totalViews = totalViewsResult.count ?? 0;
+  const totalFavorites = totalFavoritesResult.count ?? 0;
 
   // Get recent downloads
   const { data: recentDownloads } = await supabaseAdmin
@@ -91,7 +103,7 @@ export default async function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {(recentDownloads || []).map((download, index) => (
+                {(recentDownloads || []).map((download) => (
                   <tr key={download.id} className="border-b border-white/5">
                     <td className="py-3 px-4 text-white">
                       {download.wallpapers?.title || "Unknown"}
